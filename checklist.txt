@@ -1,0 +1,64 @@
+   sudo vi /etc/config.json -- move all config values from config.py to this file
+   sudo chmod +x /etc/config.json
+   export FLASK_APP=run.py
+   flask run --host=0.0.0.0
+
+//to run the app on port 80, install nginx and gunicorn
+
+sudo apt install nginx
+pip install gunicorn
+rm /etc/nginx/sites-enabled/default
+touch /etc/nginx/sites-enabled/flaskblog
+/************
+flaskblog
+ubuntu@flask-server:/etc/nginx/sites-enabled$ cat flaskblog
+
+server {
+        listen 80;
+        server_name 3.14.28.222;
+        location /static {
+                alias /home/ubuntu/myflask/myflask/Flask_Blog/flaskblog/static;
+        }
+        location / {
+                proxy_pass http://localhost:8000;
+                include /etc/nginx/proxy_params;
+                proxy_redirect off;
+        }
+
+}
+**********************/
+
+//allow port 80 and delete port 5000
+
+sudo ufw allow http/tcp
+sudo ufw delete allow 5000
+sudo ufw enable
+sudo systemctl restart nginx
+gunicorn -w 3 run:app
+
+//to run app when the terminals of server are closed install supervisor
+
+sudo apt install supervisor
+sudo vi /etc/supervisor/conf.d/flaskblog.conf
+sudo mkdir -p /var/log/flaskblog/
+sudo touch /var/log/flaskblog/flaskblog.out.log
+sudo touch /var/log/flaskblog/flaskblog.err.log
+/************
+ cat /etc/supervisor/conf.d/flaskblog.conf
+
+[program:flaskblog]
+directory=/home/ubuntu/myflask/myflask/Flask_Blog
+command=/home/ubuntu/myflask/myflask/Flask_Blog/venv/bin/gunicorn -w 3 run:app
+user=ubuntu
+autostart=true
+autorestart=true
+stopasgroup=true
+killasgroup=true
+stderr_logfile=/var/log/flaskblog/flaskblog.err.log
+stdout_logfile=/var/log/flaskblog/flaskblog.out.log
+
+********************************************/
+
+sudo supervisorctl reload
+
+
